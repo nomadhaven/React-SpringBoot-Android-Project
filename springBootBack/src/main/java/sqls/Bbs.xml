@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="mul.camp.a.dao.BbsDao">
+  
+  <select id="getBbsList" resultType="mul.camp.a.dto.BbsDto">
+  		SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+  		FROM BBS
+  		ORDER BY REF DESC, STEP ASC
+  		
+  </select>
+  
+<insert id="writeBbs" parameterType="mul.camp.a.dto.BbsDto">
+	INSERT INTO BBS(SEQ, ID, 
+				REF, STEP, DEPTH, 
+				TITLE, CONTENT, WDATE, DEL, READCOUNT)
+	VALUES(		SEQ_BBS.NEXTVAL, #{id}, 
+				(SELECT NVL(MAX(REF)+1, 0) FROM BBS), 0, 0,
+				#{title}, #{content}, SYSDATE, 0, 0)
+</insert>
+
+<!-- 글 상세페이지 보기 -->
+  <select id="getBbs" parameterType="java.lang.Integer" resultType="mul.camp.a.dto.BbsDto">
+  		SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+  		FROM BBS
+  		WHERE SEQ=#{seq}
+  </select>
+
+<!-- 조회수 업데이트 -->  
+<update id="readcount" parameterType="java.lang.Integer">
+	UPDATE BBS
+	SET READCOUNT=READCOUNT+1
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 검색  세가지 조건이 틀려도 에러가 안나오도록 where 1=1-->
+<select id="getBbsListSearch" parameterType="mul.camp.a.dto.BbsParam" resultType="mul.camp.a.dto.BbsDto">
+	SELECT SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+  	FROM BBS
+  	WHERE 1=1 
+  		<if test="choice !=null and choice !='' and search !=null and search !=''">
+  			<if test="choice=='title'">
+  				AND TITLE LIKE '%'||#{search}||'%'
+  			</if>
+  			<if test="choice=='content'">
+  				AND CONTENT LIKE '%'||#{search}||'%'
+  			</if>
+  			<if test="choice=='writer'">
+  				AND ID=#{search}
+  			</if>			
+  		</if>
+  	ORDER BY REF DESC, STEP ASC 	
+  </select>
+  
+
+<!--ROW_NUMBER()OVER(ORDER BY REF DESC, STEP ASC)란 뜻은 
+REF를 내림차순 STEP을 오름차순으로 정렬 한다는 말 그 뒤에 ROW_NUMBER()을 통해서 순번을 차례로 매긴다.
+검색해서 나온 결과에 차례로 순번 매긴다고 생각하면 된다.  -->  
+<select id="getBbsListSearchPage" parameterType="mul.camp.a.dto.BbsParam" 
+									resultType="mul.camp.a.dto.BbsDto">
+	SELECT	SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+	FROM							
+		(SELECT ROW_NUMBER()OVER(ORDER BY REF DESC, STEP ASC) AS RNUM,
+			SEQ, ID, REF, STEP, DEPTH, TITLE, CONTENT, WDATE, DEL, READCOUNT
+	  	FROM BBS
+	  	WHERE 1=1 
+	  		<if test="choice !=null and choice !='' and search !=null and search !=''">
+	  			<if test="choice=='title'">
+	  				AND TITLE LIKE '%'||#{search}||'%'
+	  			</if>
+	  			<if test="choice=='content'">
+	  				AND CONTENT LIKE '%'||#{search}||'%'
+	  			</if>
+	  			<if test="choice=='writer'">
+	  				AND ID=#{search}
+	  			</if>			
+	  		</if>
+	  	ORDER BY REF DESC, STEP ASC)
+	  WHERE RNUM BETWEEN ${start} AND ${end}	 	
+  </select>
+    
+  
+  
+<!-- 글의 총수 -->
+<select id="getBbsCount" parameterType="mul.camp.a.dto.BbsParam" resultType="java.lang.Integer">
+	SELECT NVL(COUNT(*), 0) AS CNT
+	FROM BBS
+	WHERE 1=1
+		<if test="choice != null and choice != '' and search != null and search != '' ">
+			<if test="choice == 'title'">
+				 AND TITLE LIKE '%'||#{search}||'%'
+			</if>
+			<if test="choice == 'content'">
+				 AND CONTENT LIKE '%'||#{search}||'%'
+			</if>
+			<if test="choice == 'writer'">
+				 AND ID=#{search}
+			</if>
+		</if> 
+</select>
+
+ 
+<!-- 답변시 step 변경--> 
+	<update id="replyBbsUpdate" parameterType="mul.camp.a.dto.BbsDto">
+	UPDATE BBS
+	SET STEP = STEP + 1
+	WHERE REF = (SELECT REF FROM BBS WHERE SEQ=#{seq})
+		AND STEP > (SELECT STEP FROM BBS WHERE SEQ=#{seq})
+	</update>
+	
+<!-- 답변 -->
+<insert id="replyBbsInsert" parameterType="mul.camp.a.dto.BbsDto">
+	INSERT INTO BBS(SEQ, ID, REF, STEP, DEPTH, 
+					TITLE, CONTENT, WDATE, DEL, READCOUNT)
+	VALUES(SEQ_BBS.NEXTVAL, #{id},
+			(SELECT REF FROM BBS WHERE SEQ=#{seq}),		<!-- ref --> 
+			(SELECT STEP FROM BBS WHERE SEQ=#{seq}) + 1, <!-- step -->
+			(SELECT DEPTH FROM BBS WHERE SEQ=#{seq}) + 1, <!-- depth -->
+			#{title}, #{content}, SYSDATE,
+			0, 0)	
+</insert>
+
+<!-- 글 수정 -->
+<update id="updateBbs" parameterType="mul.camp.a.dto.BbsDto">
+	UPDATE BBS
+	SET TITLE=#{title}, CONTENT=#{content}
+	WHERE SEQ=#{seq}
+</update>
+
+<!-- 글 삭제 -->
+<update id="deleteBbs" parameterType="java.lang.Integer">
+	UPDATE BBS
+	SET DEL=1
+	WHERE SEQ=#{seq}
+</update>
+	
+	
+
+
+
+  
+  </mapper>
