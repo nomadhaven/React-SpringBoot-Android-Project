@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>See-Document</title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<style type="text/css">
+th{
+	background-color: #007bff;
+	color: white;
+}
+pre { /* 자동줄바꿈 설정 */
+  	white-space: pre-wrap;
+    word-break: break-all;
+    overflow: auto;
+}
+</style>
+
+
+</head>
+<body>
+
+<h2>내용보기</h2>
+
+<div id="app" class="container">
+
+<table class="table table-striped">
+<col width="150"><col width="500">
+<tr>
+	<th>작성자</th><td id="id"></td>
+</tr>
+
+<tr>
+	<th>작성일</th><td id="wdate"></td>
+</tr>
+
+<tr>
+	<th>조회수</th><td id="readcount"></td>
+</tr>
+
+<tr>
+	<!-- <th>제목</th> -->
+	<td colspan="2" id="title" style="font-size: 22px; font-weight:bold;"></td>
+</tr>
+
+<tr>
+	<!-- <th>내용</th> -->
+	<td colspan="2" style="background-color: white;">
+		<!-- <textarea rows="15" class="form-control" id="content" style="font-size: 20px; 
+			font-family: 고딕,arial;background-color: white;" readonly></textarea> -->
+		<pre id="content" style="font-size: 20px; 
+			font-family: 고딕,arial;background-color: white;"></pre>
+	</td>	
+</tr>
+
+</table>
+<br><br>
+
+
+<button type="button" id="bbsanswer" class="btn btn-primary">답글작성</button>
+
+<button type="button" id="bbsupdate" class="btn btn-primary">수정</button>
+<button type="button" id="bbsdelete" class="btn btn-primary">삭제</button>
+
+<br><br>
+
+<table>
+<col width="1500px"><col width="150">
+<tr>
+<td>comment</td><td style="padding-left: 30px">올리기</td>
+</tr>
+<tr>
+	<td>
+		<textarea rows="3" class="form-control" id="commentContent"></textarea>
+	</td>
+	<td style="padding-left: 30px">		
+		<button type="button" class="btn btn-primary btn-block p-4" id="commentBtn">완료</button>
+	</td>
+</tr>
+</table>
+<br><br>
+
+
+<table class="table">
+	<col width="500"><col width="500">
+	<tbody id="tbody">
+		<!-- <tr>
+			<td>작성자</td>
+			<td>날짜</td>
+		</tr>
+		<tr>
+			<td colspan="2">내용</td>
+		</tr> -->
+	</tbody>
+</table>
+
+
+</div>
+
+<br><br><br><br><br><br>
+
+<script type="text/javascript">
+let str = sessionStorage.getItem("login");	
+let json = JSON.parse(str);
+
+const url = new URL(location.href);
+const urlParams = url.searchParams;
+let seq = urlParams.get("seq");
+
+//alert("seq: " + seq);
+commentList();
+
+$.ajax({
+	url:"http://localhost:3000/bbsdetail",
+	type:"get",
+	data:{ "seq":seq },
+	success:function(bbs){
+		//alert('success');
+		//alert(JSON.stringify(bbs));
+		
+		$("#id").text(bbs.id);
+		$("#title").text(bbs.title);
+		$("#wdate").text(bbs.wdate);
+		$("#readcount").text(bbs.readcount);
+		$("#content").text(bbs.content);
+		
+		let login = JSON.parse(sessionStorage.getItem("login"));
+		if(bbs.id != login.id){
+			$("#bbsupdate").hide();
+			$("#bbsdelete").hide();
+		}
+		
+	},
+	error:function(){
+		alert('error');
+	}
+	
+});
+
+$("#bbsanswer").click(function () {	
+	location.href = "bbsanswer.html?seq=" + seq;
+});
+
+$("#bbsupdate").click(function () {	
+	location.href = "bbsupdate.html?seq=" + seq;
+});
+
+$("#bbsdelete").click(function () {	
+	$.ajax({
+		url:"http://localhost:3000/bbsdelete",
+		type:"get",
+		data:{ "seq":seq },
+		success:function(msg){
+			if(msg == "OK"){
+				alert("삭제되었습니다");
+				location.href = "bbslist.html";
+			}else{
+				alert("삭제되지 않았습니다");
+			}
+		},
+		error:function(){
+			alert('error');
+		}
+	})
+});
+
+$("#commentBtn").click(function () {
+	commentWrite();	
+});
+
+function commentWrite() {
+	
+	if($("#commentContent").val().trim() == ""){
+		alert("코멘트를 작성해 주세요");
+		return;
+	}
+	
+	$.ajax({
+		url:"http://localhost:3000/commentWrite",
+		type:"get",
+		data:{ "seq":seq, "id":json.id, "content":$("#commentContent").val() },
+		success:function(msg){			
+			commentList();
+			$("#commentContent").val("");
+		},
+		error:function(){
+			alert('error');
+		}
+	})	
+}
+
+function commentList() {
+	$.ajax({
+		url:"http://localhost:3000/getCommentList",
+		type:"get",
+		data:{ "seq":seq },
+		success:function(list){
+			
+			$("#tbody").html("");
+			
+			$.each(list, function (i, item) {
+				let str = "<tr class='table-info'>" +
+				 				"<td>작성자: " + item.id +"</td>" +
+								"<td >작성일: " + item.wdate + "</td>" + 
+						  "</tr>" +
+						  "<tr>" +
+								"<td colspan='2'>" + item.content + "</td>" +
+						  "</tr>";						  
+				$("#tbody").append(str);							
+			});
+		},
+		error:function(){
+			alert('error');
+		}
+	})	
+}
+
+
+
+
+</script>
+
+</body>
+</html>

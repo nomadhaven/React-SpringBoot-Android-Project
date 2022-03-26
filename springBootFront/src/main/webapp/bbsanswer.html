@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Reply</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<style type="text/css">
+th{
+	background-color: #0000ff;
+	color: white;
+}
+</style>
+
+</head>
+<body>
+
+<div align="center">
+<h1>원글</h1>
+
+<table class="table table-bordered" style="width: 1000px">
+<tr>
+	<th>작성자</th>
+	<td id="wid"></td>
+</tr>
+<tr>
+	<th>제목</th>
+	<td id="wtitle"></td>
+</tr>
+<tr>
+	<th>작성일</th>
+	<td id="wdate"></td>
+</tr>
+<tr>
+	<th>조회수</th>
+	<td id="wreadcount"></td>
+</tr>
+<tr>
+	<th>내용</th>
+	<td>
+		<textarea rows="10" cols="100" readonly="readonly" id="wcontent"></textarea>
+	</td>
+</tr>
+</table>
+<br>
+
+<h1>답글</h1>
+
+<form id="frm">
+
+<!-- 부모글에 대한 sequence -->
+<input type="hidden" id="seq" name="seq">
+
+<table class="table table-bordered" style="width: 1000px">
+<tr>
+	<th>아이디</th>
+	<td>
+		<input type="text" id="userid" name="id" size="70px" readonly="readonly">
+	</td>	
+</tr>
+<tr>
+	<th>제목</th>
+	<td>
+		<input type="text" name="title" size="70px">
+	</td>
+</tr>
+<tr>
+	<th>내용</th>
+	<td>
+		<textarea rows="10" cols="100" name="content"></textarea>
+	</td>
+</tr>
+<tr>
+	<td align="center" colspan="2">
+		<button type="button" id="answerBtn" class="btn btn-primary">답글쓰기</button>
+	</td>
+</tr>
+
+</table>
+</form>
+
+</div>
+
+<script type="text/javascript">
+let str = sessionStorage.getItem("login");	
+let json = JSON.parse(str);
+$("#userid").val(json.id);
+
+const url = new URL(location.href);
+const urlParams = url.searchParams;
+let seq = urlParams.get("seq");
+
+$.ajax({
+	url:"http://localhost:3000/bbsdetail",
+	type:"get",
+	data:{ "seq":seq },
+	success:function(bbs){
+		//alert('success');
+		$("#wid").text(bbs.id);
+		$("#wtitle").text(bbs.title);
+		$("#wdate").text(bbs.wdate);
+		$("#wreadcount").text(bbs.readcount);
+		$("#wcontent").text(bbs.content);
+	},
+	error:function(){
+		alert('error');
+	}
+});
+
+$("#answerBtn").click(function () {	
+	
+	$("#seq").val(seq);
+	
+	$.ajax({
+		url:"http://localhost:3000/answer",
+		type:"get",
+		data:$("#frm").serialize(),
+		success:function(msg){
+			if(msg == "OK"){
+				alert('답글이 추가되었습니다');
+				location.href = "bbslist.html";	
+			}else{
+				alert('답글이 추가되지 않았습니다');
+			}			
+		},
+		error:function(){
+			alert('error');
+		}
+	})
+});
+
+
+
+
+</script>
+
+
+
+
+
+</body>
+</html>
