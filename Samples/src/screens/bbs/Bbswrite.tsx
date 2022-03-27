@@ -29,7 +29,7 @@ function Bbswrite(props:any){
         if(title.trim()==""){
         }
 
-        axios.get("http://192.168.35.3:3000/bbswrite",
+        axios.get("http://(YOUR IP ADDRESS):3000/bbswrite",
         {
             params:{
                 id:id,

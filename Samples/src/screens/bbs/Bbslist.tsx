@@ -29,7 +29,7 @@ function Item({id,title,readcount,seq, props}:any){
         console.log('itemClick')
         console.log(seq)
 
-        axios.get("http://192.168.35.3:3000/bbsdetail", { params:{seq:seq}})
+        axios.get("http://(YOUR IP ADDRESS):3000/bbsdetail", { params:{seq:seq}})
             .then(function(resp){
                 console.log(resp.data)
 
@@ -95,7 +95,7 @@ function Bbslist(props:any){
 
     useEffect(()=>{
 
-        axios.get("http://192.168.35.3:3000/getBbsList",{} )
+        axios.get("http://YOUR IP ADDRESS:3000/getBbsList",{} )
             .then(function(resp){
              console.log(resp.data)   
 
